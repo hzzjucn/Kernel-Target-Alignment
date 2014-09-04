@@ -7,34 +7,56 @@ import org.apache.commons.math3.linear.EigenDecomposition;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 
-public class KernelTargetAlignment {
-		
-	//get centered kernels
+public class KernelTargetAlignment {		
+	
+	//get centered kernel matrix
 	public RealMatrix Center (RealMatrix km)
 	{
-		int dim = km.getRowDimension();
-		RealMatrix I = MatrixUtils.createRealIdentityMatrix(dim);				
-		RealMatrix one = MatrixUtils.createRealMatrix(dim, dim);
+		double dim = km.getRowDimension();
+		RealMatrix I = MatrixUtils.createRealIdentityMatrix((int)dim);
+		System.out.println(I.toString());
+		
+		RealMatrix one = MatrixUtils.createRealMatrix((int)dim, (int)dim);
 		
 		for (int i=0; i<dim; i++)
 			for (int j=0; j<dim; j++)
 			{
 			   one.setEntry(i, j, 1d);
-			}
-		RealMatrix u = I.subtract(one.scalarMultiply(1/dim));							
+			}		
+		System.out.println(one.toString());
+		
+		RealMatrix u = I.subtract(one.scalarMultiply(1d/dim));		
+		System.out.println(u.toString());
+		
 	    return (u.multiply(km)).multiply(u);
 	}
 	
-	//normalize kernels: K(x,y)/sqrt(K(x,x)K(y,y)) 
+	//normalize kernels by: K(x,y)/sqrt(K(x,x)K(y,y)) 
 	public RealMatrix Normalize (RealMatrix km)
-	{		
-		return km;		
+	{
+		int dim = km.getRowDimension();
+		double[]diag = new double[dim];
+		
+		for (int k=0; k<dim; k++)
+		{
+		    diag[k] = km.getEntry(k, k);
+		}		
+		RealMatrix d = MatrixUtils.createColumnRealMatrix (diag);		
+		System.out.println (d.multiply(d.transpose()));
+		
+		double[][] tmp = d.multiply(d.transpose()).getData();	
+		for (int i=0; i<dim; i++)
+			for (int j=0; j<dim; j++)
+			{
+				tmp[i][j]= km.getEntry(i, j)/Math.sqrt(tmp[i][j]);
+			}				
+		return MatrixUtils.createRealMatrix(tmp);
 	}
 	
 	// the frobenius product of two kernel matrixes
 	public double FrobeniusProduct(RealMatrix km1, RealMatrix km2)
 	{		
-	  return km1.transpose().multiply(km2).getTrace();		
+	   return (km1.transpose().multiply(km2)).getTrace();		
 	}
 		
 	public static boolean checkIsPSD (RealMatrix km)
