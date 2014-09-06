@@ -9,6 +9,7 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.ojalgo.matrix.store.IdentityStore;
 import org.ojalgo.matrix.store.MatrixStore;
 import org.ojalgo.matrix.store.PrimitiveDenseStore;
+import org.ojalgo.optimisation.convex.ConvexSolver;
 import org.ojalgo.optimisation.quadratic.QuadraticSolver;
 
 public class KernelTargetAlignment {		
@@ -132,7 +133,7 @@ public class KernelTargetAlignment {
 	 	System.out.println (M);
 	 	
 	 	// solve the QP optimization	 		 	
-	 	QuadraticSolver.Builder qp = new QuadraticSolver.Builder(M.scale (2.0), a.scale (2.0));	 	
+	 	ConvexSolver.Builder qp = new ConvexSolver.Builder(M.scale (2.0), a.scale (2.0));	 	
 	 	MatrixStore<Double> AI = IdentityStore.PRIMITIVE.make(p).scale(-1.0);
 	 	MatrixStore<Double> BI = PrimitiveDenseStore.FACTORY.makeZero(p, 1);
 	 	
