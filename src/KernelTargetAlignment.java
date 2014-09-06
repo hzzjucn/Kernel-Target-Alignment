@@ -6,6 +6,10 @@ import java.util.ArrayList;
 import org.apache.commons.math3.linear.EigenDecomposition;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
+import org.ojalgo.matrix.store.IdentityStore;
+import org.ojalgo.matrix.store.MatrixStore;
+import org.ojalgo.matrix.store.PrimitiveDenseStore;
+import org.ojalgo.optimisation.quadratic.QuadraticSolver;
 
 public class KernelTargetAlignment {		
 	
@@ -14,7 +18,7 @@ public class KernelTargetAlignment {
 	{
 		double dim = km.getRowDimension();
 		RealMatrix I = MatrixUtils.createRealIdentityMatrix((int)dim);
-		System.out.println(I.toString());
+//		System.out.println(I.toString());
 		
 		RealMatrix one = MatrixUtils.createRealMatrix((int)dim, (int)dim);
 		
@@ -23,10 +27,10 @@ public class KernelTargetAlignment {
 			{
 			   one.setEntry(i, j, 1d);
 			}		
-		System.out.println(one.toString());
+//		System.out.println(one.toString());
 		
 		RealMatrix u = I.subtract(one.scalarMultiply(1d/dim));		
-		System.out.println(u.toString());
+//		System.out.println(u.toString());
 		
 	    return (u.multiply(km)).multiply(u);
 	}
@@ -42,7 +46,7 @@ public class KernelTargetAlignment {
 		    diag[k] = km.getEntry(k, k);
 		}		
 		RealMatrix d = MatrixUtils.createColumnRealMatrix (diag);		
-		System.out.println (d.multiply(d.transpose()));
+//		System.out.println (d.multiply(d.transpose()));
 		
 		double[][] tmp = d.multiply(d.transpose()).getData();	
 		for (int i=0; i<dim; i++)
@@ -84,15 +88,15 @@ public class KernelTargetAlignment {
         return map;
     }
     	
-	public static void main(String[] args) throws ClassNotFoundException, IOException 
+	public static void main(String[] args) throws Exception 
 	{
 		// read matrixes
 		String folder = "data/";
 		String[] modalities = {"name", "category", "dev", "description", "update", "permission", "image", "content", "size", "review"};
 		int p = modalities.length;
-		String target = "Y";		
-		ArrayList <RealMatrix> kms = new ArrayList <RealMatrix> ();
+		String target = "Y";
 		
+		ArrayList <RealMatrix> kms = new ArrayList <RealMatrix> ();		
 		for (String modality: modalities)
 		{
 			RealMatrix km = (RealMatrix) readMatrix (folder + modality + ".data");
@@ -101,9 +105,8 @@ public class KernelTargetAlignment {
 		RealMatrix ky = (RealMatrix) readMatrix (folder + target + ".data");
 		
 		//Construct M, a
-		RealMatrix a = MatrixUtils.createRealMatrix (p, 1);
-		RealMatrix M = MatrixUtils.createRealMatrix (p, p);
-		
+//		RealMatrix a = MatrixUtils.createColumnRealMatrix (new double [p]);
+		PrimitiveDenseStore a = PrimitiveDenseStore.FACTORY.makeZero(p, 1);
 		KernelTargetAlignment kta = new KernelTargetAlignment();
 		
 	 	RealMatrix ky_c = kta.Center(ky);
@@ -115,19 +118,34 @@ public class KernelTargetAlignment {
 	 	{
 	 		RealMatrix km_c = kta.Center (kms.get(i));
 	 		km_c = kta.Normalize (km_c);	 		
-	 		km_cs.set (i, km_c);
-	 		a.setEntry (i, 1, kta.FrobeniusProduct (km_c, ky_c));
-	 	}
+	 		km_cs.add (i, km_c);
+	 		a.set(i, 0, kta.FrobeniusProduct (km_c, ky_c));
+	 	}	 	
+	 	System.out.println(a);
+	 	System.out.println(a.scale(2d));
+	 	
+//		RealMatrix M = MatrixUtils.createRealMatrix (p, p);
+	 	PrimitiveDenseStore M = PrimitiveDenseStore.FACTORY.makeZero(p, p);
 	 	
 	 	for (int i=0; i<p; i++)
-	 		for (int j=0; j<p; j++)
-	 		{
+	 		 for (int j=0; j<p; j++)
+	 		 {
 	 			double entry = kta.FrobeniusProduct(km_cs.get(i), km_cs.get(j));
-	 			M.setEntry(i, j, entry);
-	 			M.setEntry(j, i, entry);	 				 			
-	 		}
+	 			M.set(i, j, entry);
+	 			M.set(j, i, entry);	 				 			
+	 		 }	 	
+	 	System.out.println (M);
 	 	
-	 	// solve the QP optimization
+	 	// solve the QP optimization	 		 	
+	 	QuadraticSolver.Builder qp = new QuadraticSolver.Builder(M.scale (2.0), a.scale (2.0));	 	
+	 	MatrixStore<Double> AI = IdentityStore.PRIMITIVE.make(p).scale(-1.0);
+	 	MatrixStore<Double> BI = PrimitiveDenseStore.FACTORY.makeZero(p, 1);
 	 	
+	 	System.out.println (AI);
+	 	System.out.println (BI);
+	 	
+	 	qp.inequalities (AI, BI);
+	 	qp.build().solve();
+	 	System.out.println (qp.getX());
 	}
 }
