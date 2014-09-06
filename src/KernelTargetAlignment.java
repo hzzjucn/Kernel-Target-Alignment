@@ -109,17 +109,12 @@ public class KernelTargetAlignment {
 		PrimitiveDenseStore a = PrimitiveDenseStore.FACTORY.makeZero(p, 1);
 		KernelTargetAlignment kta = new KernelTargetAlignment();
 		
-	 	RealMatrix ky_c = kta.Center(ky);
-	 	ky_c = kta.Normalize(ky_c);
-	 	
-	 	ArrayList <RealMatrix> km_cs = new ArrayList <RealMatrix> ();	 	
-	 	
+	 	ky = kta.Normalize (kta.Center(ky));
+	 		 		 	
 	 	for (int i=0; i<kms.size(); i++)
-	 	{
-	 		RealMatrix km_c = kta.Center (kms.get(i));
-	 		km_c = kta.Normalize (km_c);	 		
-	 		km_cs.add (i, km_c);
-	 		a.set(i, 0, kta.FrobeniusProduct (km_c, ky_c));
+	 	{ 		
+	 		kms.set (i, kta.Normalize (kta.Center (kms.get(i))));
+	 		a.set(i, 0, kta.FrobeniusProduct (kms.get(i), ky));
 	 	}	 	
 	 	System.out.println(a);
 	 	System.out.println(a.scale(2d));
@@ -130,7 +125,7 @@ public class KernelTargetAlignment {
 	 	for (int i=0; i<p; i++)
 	 		 for (int j=0; j<p; j++)
 	 		 {
-	 			double entry = kta.FrobeniusProduct(km_cs.get(i), km_cs.get(j));
+	 			double entry = kta.FrobeniusProduct(kms.get(i), kms.get(j));
 	 			M.set(i, j, entry);
 	 			M.set(j, i, entry);	 				 			
 	 		 }	 	
@@ -141,8 +136,8 @@ public class KernelTargetAlignment {
 	 	MatrixStore<Double> AI = IdentityStore.PRIMITIVE.make(p).scale(-1.0);
 	 	MatrixStore<Double> BI = PrimitiveDenseStore.FACTORY.makeZero(p, 1);
 	 	
-	 	System.out.println (AI);
-	 	System.out.println (BI);
+//	 	System.out.println (AI);
+//	 	System.out.println (BI);
 	 	
 	 	qp.inequalities (AI, BI);
 	 	qp.build().solve();
